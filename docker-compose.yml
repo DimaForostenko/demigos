@@ -1,0 +1,58 @@
+version: '3.0'
+
+networks:
+  yii:
+    driver: bridge
+    
+
+services:
+  php:
+    container_name: 'php'
+    networks:
+      - yii
+    build:
+      context: ./../demigos
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - './../demigos:/var/www'
+    environment:
+      COMPOSER_MEMORY_LIMIT: 2G
+      PHP_IDE_CONFIG: "serverName=localhost"
+    working_dir: '/var/www'
+    depends_on:
+      - mysql
+
+  nginx:
+    container_name: 'nginx'
+    image: nginx:1.23.2-alpine
+    networks:
+      - yii
+    build:
+      context: ./docker/nginx
+    depends_on:
+      - php
+    ports:
+      - 8181:80
+    volumes:
+      - './../demigos:/var/www'
+      - './docker/nginx/default.conf:/etc/nginx/default.conf'
+
+  mysql:
+    container_name: 'mysql'
+    image: mysql:latest
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    networks:
+      - yii  
+    ports:
+      - '4306:3306'
+    restart: always
+    environment:
+      MYSQL_USER: 'devfor'
+      MYSQL_PASSWORD: '260491'
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: 'demigos'
+    volumes:
+      - './../demigos:/var/www'
+      - ./data-base/dump:/app/dump
+      - ./data-base/mysql:/var/lib/mysql/
+
